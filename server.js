@@ -1,37 +1,72 @@
 const express = require("express");
 const fs = require("fs");
+const cors = require("cors");
 
 const app = express();
 
+app.use(cors());
+
 app.use(express.json());
+
 app.use(express.static("public"));
 
+
+// SAVE DATA
 app.post("/save", (req, res) => {
+
+    const email = req.body.email;
+
+    const password = req.body.password;
 
     let data = [];
 
-    // safer JSON read (prevents crash if file is empty or corrupted)
+    // CHECK IF FILE EXISTS
     if (fs.existsSync("data.json")) {
-        try {
-            const fileData = fs.readFileSync("data.json", "utf8");
-            data = fileData ? JSON.parse(fileData) : [];
-        } catch (err) {
-            data = [];
-        }
+
+        let oldData = fs.readFileSync("data.json");
+
+        data = JSON.parse(oldData || "[]");
     }
 
-    data.push(req.body);
+    // ADD NEW DATA
+    data.push({
+        email: email,
+        password: password
+    });
 
+    // SAVE TO FILE
     fs.writeFileSync("data.json", JSON.stringify(data, null, 2));
 
-    console.log("Data saved:", req.body);
-
     res.send("Data Saved!");
+
 });
 
-// Render port fix
+
+// SHOW SAVED DATA
+app.get("/data", (req, res) => {
+
+    if (fs.existsSync("data.json")) {
+
+        let data = fs.readFileSync("data.json");
+
+        res.send(data);
+
+    } else {
+
+        res.send("No data found");
+
+    }
+
+});
+
+
+// PORT FOR RENDER
 const PORT = process.env.PORT || 3000;
 
+
+// START SERVER
 app.listen(PORT, () => {
+
     console.log("Server running on port " + PORT);
+
 });
