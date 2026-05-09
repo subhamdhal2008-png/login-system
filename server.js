@@ -4,37 +4,34 @@ const fs = require("fs");
 const app = express();
 
 app.use(express.json());
+app.use(express.static("public"));
 
-app.use(express.static(__dirname));
-
-app.post("/save", (req,res)=>{
-
-    const email = req.body.email;
-
-    const password = req.body.password;
+app.post("/save", (req, res) => {
 
     let data = [];
 
-    if(fs.existsSync("data.json")){
-
-        let oldData = fs.readFileSync("data.json");
-
-        data = JSON.parse(oldData || "[]");
+    // safer JSON read (prevents crash if file is empty or corrupted)
+    if (fs.existsSync("data.json")) {
+        try {
+            const fileData = fs.readFileSync("data.json", "utf8");
+            data = fileData ? JSON.parse(fileData) : [];
+        } catch (err) {
+            data = [];
+        }
     }
 
-    data.push({
-        email: email,
-        password: password
-    });
+    data.push(req.body);
 
-    fs.writeFileSync("data.json", JSON.stringify(data,null,2));
+    fs.writeFileSync("data.json", JSON.stringify(data, null, 2));
+
+    console.log("Data saved:", req.body);
 
     res.send("Data Saved!");
-
 });
 
-app.listen(3000, ()=>{
+// Render port fix
+const PORT = process.env.PORT || 3000;
 
-    console.log("Server running at http://localhost:3000");
-
+app.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
 });
